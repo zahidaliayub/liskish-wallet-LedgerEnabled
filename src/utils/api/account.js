@@ -1,5 +1,5 @@
 import Lisk from 'lisk-js';
-import { requestToActivePeer } from './peers';
+import { requestToActivePeer, popsicleToActivePeer } from './peers';
 
 export const getAccount = (activePeer, address) =>
   new Promise((resolve, reject) => {
@@ -28,6 +28,17 @@ export const setSecondPassphrase = (activePeer, secondSecret, publicKey, secret)
 export const send = (activePeer, recipientId, amount, secret, secondSecret = null) =>
   requestToActivePeer(activePeer, 'transactions',
     { recipientId, amount, secret, secondSecret });
+
+export const broadcastTransaction = (activePeer, transaction) => {
+  const requestValue = {
+    requestMethod: 'POST',
+    requestUrl: `${activePeer.getFullUrl()}/peer/transactions/`,
+    nethash: activePeer.getNethash(),
+    requestParams: transaction,
+  };
+  return popsicleToActivePeer(activePeer, 'transactions', requestValue);
+};
+
 
 export const transactions = (activePeer, address, limit = 20, offset = 0, orderBy = 'timestamp:desc') =>
   requestToActivePeer(activePeer, 'transactions', {

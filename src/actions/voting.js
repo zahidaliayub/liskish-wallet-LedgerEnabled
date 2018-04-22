@@ -1,3 +1,5 @@
+import i18next from 'i18next';
+import { DposLedger } from 'dpos-ledger-api';
 import { errorAlertDialogDisplayed } from './dialog';
 import {
   listAccountDelegates,
@@ -6,9 +8,14 @@ import {
 } from '../utils/api/delegate';
 import { passphraseUsed } from './account';
 import { transactionAdded } from './transactions';
+import { createRawVoteTX, getTransactionBytes, getBufferToHex, calculateTxId } from '../utils/rawTransactionWrapper';
 import Fees from '../constants/fees';
 import actionTypes from '../constants/actions';
 import transactionTypes from '../constants/transactionTypes';
+import loginTypes from '../constants/loginTypes';
+import { getLedgerAccount, getLedgerTransportMethod } from '../utils/ledger';
+import { errorToastDisplayed, infoToastDisplayed } from './toaster';
+import { broadcastTransaction } from '../utils/api/account';
 
 /**
  * Add pending variable to the list of voted delegates and list of unvoted delegates
@@ -84,32 +91,87 @@ export const votePlaced = ({ activePeer, passphrase, account, votes, secondSecre
       }
     });
 
-    vote(
-      activePeer,
-      passphrase,
-      account.publicKey,
-      votedList,
-      unvotedList,
-      secondSecret,
-    ).then((response) => {
-      // Ad to list
-      dispatch(pendingVotesAdded());
+    switch (account.loginType) {
+      case loginTypes.passphrase:
+        vote(
+          activePeer,
+          passphrase,
+          account.publicKey,
+          votedList,
+          unvotedList,
+          secondSecret,
+        ).then((response) => {
+          // Ad to list
+          dispatch(pendingVotesAdded());
 
-      // Add the new transaction
-      // @todo Handle alerts either in transactionAdded action or middleware
-      dispatch(transactionAdded({
-        id: response.transactionId,
-        senderPublicKey: account.publicKey,
-        senderId: account.address,
-        amount: 0,
-        fee: Fees.vote,
-        type: transactionTypes.vote,
-      }));
-    }).catch((error) => {
-      const text = error && error.message ? `${error.message}.` : 'An error occurred while placing your vote.';
-      dispatch(errorAlertDialogDisplayed({ text }));
-    });
-    dispatch(passphraseUsed(account.passphrase));
+          // Add the new transaction
+          // @todo Handle alerts either in transactionAdded action or middleware
+          dispatch(transactionAdded({
+            id: response.transactionId,
+            senderPublicKey: account.publicKey,
+            senderId: account.address,
+            amount: 0,
+            fee: Fees.vote,
+            type: transactionTypes.vote,
+          }));
+        }).catch((error) => {
+          const text = error && error.message ? `${error.message}.` : 'An error occurred while placing your vote.';
+          dispatch(errorAlertDialogDisplayed({ text }));
+        });
+        dispatch(passphraseUsed(account.passphrase));
+        break;
+
+      // eslint-disable-next-line no-case-declarations
+      case loginTypes.ledgerNano:
+        const tx = createRawVoteTX(account.publicKey, account.address, votedList, unvotedList);
+        const txBytes = getTransactionBytes(tx);
+
+        const transportMethod = getLedgerTransportMethod();
+        const ledgerAccount = getLedgerAccount();
+        let liskLedger;
+
+        transportMethod.create()
+          .then((transport) => {
+            liskLedger = new DposLedger(transport);
+          })
+          .then(() => {
+            dispatch(infoToastDisplayed({ label: i18next.t('Look at your Ledger for confirmation') }));
+            liskLedger.signTX(ledgerAccount, txBytes, false)
+              .then((signature) => {
+                tx.signature = getBufferToHex(signature);
+                tx.id = calculateTxId(tx);
+                broadcastTransaction(activePeer, { transaction: tx })
+                  .then((data) => {
+                    dispatch(pendingVotesAdded());
+
+                    dispatch(transactionAdded({
+                      id: data.transactionId,
+                      senderPublicKey: account.publicKey,
+                      senderId: account.address,
+                      amount: 0,
+                      fee: Fees.vote,
+                      type: transactionTypes.vote,
+                    }));
+                  })
+                  .catch((error) => {
+                    const text = error && error.message ? `${error.message}.` : i18next.t('An error occurred while placing your vote.');
+                    dispatch(errorAlertDialogDisplayed({ text }));
+                  });
+                dispatch(passphraseUsed(passphrase));
+              })
+              .catch(() => {
+                dispatch(errorToastDisplayed({ label: i18next.t('Action Denied by User') }));
+              });
+          });
+        break;
+
+      case loginTypes.trezor:
+        dispatch(errorAlertDialogDisplayed({ text: i18next.t('Not Yet Implemented. Sorry.') }));
+        break;
+
+      default:
+        dispatch(errorAlertDialogDisplayed({ text: i18next.t('Login Type not recognized.') }));
+    }
   };
 
 /**

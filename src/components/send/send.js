@@ -119,7 +119,7 @@ class Send extends React.Component {
                 !this.state.recipient.value ||
                 !!this.state.amount.error ||
                 !this.state.amount.value ||
-                !authStateIsValid(this.state)),
+                !authStateIsValid(this.state, this.props.account)),
             }} />
         </form>
       </div>

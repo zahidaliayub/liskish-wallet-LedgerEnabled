@@ -1,6 +1,7 @@
 import React from 'react';
 import PassphraseInput from '../passphraseInput';
 import { extractPublicKey } from '../../utils/api/account';
+import loginTypes from '../../constants/loginTypes';
 
 class AuthInputs extends React.Component {
   componentDidMount() {
@@ -25,20 +26,21 @@ class AuthInputs extends React.Component {
   }
 
   render() {
-    return <span>
-      {(!this.props.account.passphrase &&
+    return (this.props.account.loginType === loginTypes.passphrase ?
+      <span>
+        {(!this.props.account.passphrase &&
         <PassphraseInput label={this.props.t('Passphrase')}
           className='passphrase'
           error={this.props.passphrase.error}
           value={this.props.passphrase.value}
           onChange={this.onChange.bind(this, 'passphrase')} />)}
-      {(this.props.account.secondSignature &&
+        {(this.props.account.secondSignature &&
         <PassphraseInput label={this.props.t('Second Passphrase')}
           className='second-passphrase'
           error={this.props.secondPassphrase.error}
           value={this.props.secondPassphrase.value}
           onChange={this.onChange.bind(this, 'secondPassphrase')} />)}
-    </span>;
+      </span> : '');
   }
 }
 

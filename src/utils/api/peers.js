@@ -13,3 +13,17 @@ export const requestToActivePeer = (activePeer, path, urlParams) =>
       loadingFinished(path);
     });
   });
+
+export const popsicleToActivePeer = (activePeer, url, requestValue) =>
+  new Promise((resolve, reject) => {
+    loadingStarted(url);
+    activePeer.doPopsicleRequest(requestValue)
+      .then((data) => {
+        if (data.body.success) {
+          resolve(data.body);
+        } else {
+          reject(data.body);
+        }
+        loadingFinished(url);
+      });
+  });

@@ -9,6 +9,7 @@ const peerSet = (data, config) => ({
   data: Object.assign({
     passphrase: data.passphrase,
     publicKey: data.publicKey,
+    loginType: data.loginType,
     activePeer: Lisk.api(config),
   }),
   type: actionTypes.activePeerSet,

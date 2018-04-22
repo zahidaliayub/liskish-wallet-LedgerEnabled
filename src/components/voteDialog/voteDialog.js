@@ -82,7 +82,7 @@ export default class VoteDialog extends React.Component {
                 getTotalVotesCount(votes) > maxCountOfVotes ||
                 countOfVotesInOneTurn === 0 ||
                 countOfVotesInOneTurn > maxCountOfVotesInOneTurn ||
-                !authStateIsValid(this.state)
+                !authStateIsValid(this.state, this.props.account)
               ),
             }} />
         </form>

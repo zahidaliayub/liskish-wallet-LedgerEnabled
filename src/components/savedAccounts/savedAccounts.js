@@ -12,6 +12,7 @@ import styles from './savedAccounts.css';
 const SavedAccounts = ({
   networkOptions,
   publicKey,
+  loginType,
   closeDialog,
   accountSaved,
   accountRemoved,
@@ -24,6 +25,7 @@ const SavedAccounts = ({
       network: networkOptions.code,
       address: networkOptions.address,
       publicKey,
+      loginType,
     });
   };
 
@@ -43,6 +45,7 @@ const SavedAccounts = ({
               <TableCell className={styles.iconCell} >{t('Switch')}</TableCell>
               <TableCell>{t('Address')}</TableCell>
               <TableCell>{t('Network')}</TableCell>
+              <TableCell>{t('Login Type')}</TableCell>
               <TableCell className={styles.iconCell} >{t('Forget')}</TableCell>
             </TableHead>
             {savedAccounts.map(account => (
@@ -61,6 +64,9 @@ const SavedAccounts = ({
                   {account.network === networks.customNode.code ?
                     account.address :
                     t(getNetwork(account.network).name)}
+                </TableCell>
+                <TableCell>
+                  {account.loginType}
                 </TableCell>
                 <TableCell className={styles.iconCell} >
                   <IconButton icon='clear' className='forget-button'

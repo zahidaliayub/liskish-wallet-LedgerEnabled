@@ -3,6 +3,7 @@ import { getAccount, extractAddress, extractPublicKey } from '../../utils/api/ac
 import { getDelegate } from '../../utils/api/delegate';
 import { accountLoggedIn } from '../../actions/account';
 import actionTypes from '../../constants/actions';
+import loginTypes from '../../constants/loginTypes';
 import { errorToastDisplayed } from '../../actions/toaster';
 
 const loginMiddleware = store => next => (action) => {
@@ -11,14 +12,15 @@ const loginMiddleware = store => next => (action) => {
   }
 
   next(Object.assign({}, action, { data: action.data.activePeer }));
-
   const { passphrase } = action.data;
   const publicKey = passphrase ? extractPublicKey(passphrase) : action.data.publicKey;
   const address = extractAddress(publicKey);
+  const loginType = passphrase ? loginTypes.passphrase : action.data.loginType;
   const accountBasics = {
     passphrase,
     publicKey,
     address,
+    loginType,
   };
   const { activePeer } = action.data;
 
